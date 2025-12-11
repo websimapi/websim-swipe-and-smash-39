@@ -13,9 +13,17 @@ export function startRecording(boardGrid) {
     isPaused = false;
     timePaused = 0;
     pauseStartTime = 0;
-    // Deep copy of the initial candy types, not the elements
-    initialState = boardGrid.map(row => 
-        row.map(candy => candy ? candy.dataset.type : null)
+    // Deep copy of the initial candy types and IDs
+    initialState = boardGrid.map((row, r) => 
+        row.map((candy, c) => {
+             if (!candy) return null;
+             return {
+                 id: parseInt(candy.dataset.id),
+                 type: candy.dataset.type,
+                 r: r,
+                 c: c
+             };
+        })
     );
     // Record that BGM starts at the beginning
     recordAction({ type: 'startBGM' });
