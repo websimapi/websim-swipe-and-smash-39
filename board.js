@@ -3,6 +3,7 @@ import { playSound } from './audio.js';
 
 export default class Board {
     constructor(size, candyTypes, onMatch, getNewCandyType, getIsPaused = () => false) {
+        this.playSound = playSound;
         this.size = size;
         this.candyTypes = candyTypes;
         this.grid = [];
@@ -50,30 +51,42 @@ export default class Board {
         this.boardElement.style.gridTemplateRows = `repeat(${this.size}, 1fr)`;
     }
 
+    createCandyElement() {
+        return document.createElement('div');
+    }
+
+    setCandyStyle(candy, property, value) {
+        candy.style[property] = value;
+    }
+
+    addCandyClass(candy, className) {
+        candy.classList.add(className);
+    }
+
     createCandy(row, col, type, isInitializing = false, isReplay = false) {
-        const candy = document.createElement('div');
+        const candy = this.createCandyElement();
         const candyType = type || this.getNewCandyType(isInitializing);
         
-        candy.classList.add('candy');
+        this.addCandyClass(candy, 'candy');
         if (isReplay) {
-            candy.classList.add('replay-candy');
+            this.addCandyClass(candy, 'replay-candy');
         }
         candy.dataset.row = row;
         candy.dataset.col = col;
         candy.dataset.type = candyType;
-        candy.style.backgroundImage = `url(${candyType})`;
+        this.setCandyStyle(candy, 'backgroundImage', `url(${candyType})`);
         
         const candySize = this.boardElement.clientWidth / this.size;
-        candy.style.width = `${candySize}px`;
-        candy.style.height = `${candySize}px`;
+        this.setCandyStyle(candy, 'width', `${candySize}px`);
+        this.setCandyStyle(candy, 'height', `${candySize}px`);
         
         if (isInitializing) {
-            candy.style.top = `${row * candySize}px`;
-            candy.style.left = `${col * candySize}px`;
+            this.setCandyStyle(candy, 'top', `${row * candySize}px`);
+            this.setCandyStyle(candy, 'left', `${col * candySize}px`);
         } else {
             // Start above the board for drop-in animation
-            candy.style.top = `${-candySize}px`;
-            candy.style.left = `${col * candySize}px`;
+            this.setCandyStyle(candy, 'top', `${-candySize}px`);
+            this.setCandyStyle(candy, 'left', `${col * candySize}px`);
         }
 
         this.boardElement.appendChild(candy);
@@ -98,12 +111,12 @@ export default class Board {
 
         // Animate swap
         const candySize = this.boardElement.clientWidth / this.size;
-        candy1.style.top = `${r2 * candySize}px`;
-        candy1.style.left = `${c2 * candySize}px`;
-        candy2.style.top = `${r1 * candySize}px`;
-        candy2.style.left = `${c1 * candySize}px`;
+        this.setCandyStyle(candy1, 'top', `${r2 * candySize}px`);
+        this.setCandyStyle(candy1, 'left', `${c2 * candySize}px`);
+        this.setCandyStyle(candy2, 'top', `${r1 * candySize}px`);
+        this.setCandyStyle(candy2, 'left', `${c1 * candySize}px`);
 
-        playSound('nice_swipe.mp3');
+        this.playSound('nice_swipe.mp3');
         recorder.recordSound('nice_swipe.mp3');
         return this.pausableTimeout(300);
     }
@@ -157,9 +170,9 @@ export default class Board {
                 const isSwapped = (c) => swappedCandies.includes(c);
                 if (group.type === 'five' && group.candies.some(isSwapped)) {
                     powerup = { type: 'rainbow' };
-                } else if (group.type === 'L' || group.type === 'T') {
+                } else if ((group.type === 'L' || group.type === 'T') && group.candies.some(isSwapped)) {
                      powerup = { type: 'bomb' };
-                } else if (group.type === 'four') {
+                } else if (group.type === 'four' && group.candies.some(isSwapped)) {
                      powerup = group.candies[1].dataset.row === group.candies[0].dataset.row ? { type: 'row' } : { type: 'col' };
                 }
             }
@@ -183,10 +196,10 @@ export default class Board {
             if (candyToUpgrade && allCandiesToClear.has(candyToUpgrade)) {
                 allCandiesToClear.delete(candyToUpgrade);
                 candyToUpgrade.dataset.powerup = p.type;
-                candyToUpgrade.classList.add(`powerup-${p.type}`);
+                this.addCandyClass(candyToUpgrade, `powerup-${p.type}`);
                  if (p.type === 'rainbow') {
                     candyToUpgrade.dataset.type = 'candy_chocolate.png';
-                    candyToUpgrade.style.backgroundImage = `url(candy_chocolate.png)`;
+                    this.setCandyStyle(candyToUpgrade, 'backgroundImage', `url(candy_chocolate.png)`);
                 }
             }
         });
@@ -217,7 +230,7 @@ export default class Board {
             this.onMatch(Array.from(allCandiesToClear), swappedCandies !== null);
             
             allCandiesToClear.forEach(candy => {
-                candy.classList.add('matched');
+                this.addCandyClass(candy, 'matched');
                 this.grid[parseInt(candy.dataset.row)][parseInt(candy.dataset.col)] = null;
             });
         }
@@ -297,7 +310,7 @@ export default class Board {
         this.onMatch(candiesToSmash, false);
         
         candiesToSmash.forEach(candy => {
-            candy.classList.add('matched');
+            this.addCandyClass(candy, 'matched');
             const r = parseInt(candy.dataset.row);
             const c = parseInt(candy.dataset.col);
             if (this.grid[r] && this.grid[r][c] === candy) {
@@ -331,7 +344,7 @@ export default class Board {
         this.onMatch(Array.from(candiesToRemove), true);
         
         candiesToRemove.forEach(candy => {
-            candy.classList.add('matched');
+            this.addCandyClass(candy, 'matched');
             this.grid[parseInt(candy.dataset.row)][parseInt(candy.dataset.col)] = null;
         });
 
@@ -357,7 +370,7 @@ export default class Board {
                         this.grid[emptyRow][c].dataset.row = emptyRow;
                         
                         const candySize = this.boardElement.clientWidth / this.size;
-                        this.grid[emptyRow][c].style.top = `${emptyRow * candySize}px`;
+                        this.setCandyStyle(this.grid[emptyRow][c], 'top', `${emptyRow * candySize}px`);
                     }
                     emptyRow--;
                 }
@@ -374,10 +387,14 @@ export default class Board {
                     const candy = this.createCandy(r, c, undefined, false, isReplay);
                     this.grid[r][c] = candy;
                     // Animate the drop
-                    await new Promise(resolve => requestAnimationFrame(() => {
-                        candy.style.top = `${r * candySize}px`;
-                        resolve();
-                    }));
+                    if (this.isSimulation) {
+                         this.setCandyStyle(candy, 'top', `${r * candySize}px`);
+                    } else {
+                        await new Promise(resolve => requestAnimationFrame(() => {
+                            this.setCandyStyle(candy, 'top', `${r * candySize}px`);
+                            resolve();
+                        }));
+                    }
                 }
             }
         }

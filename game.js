@@ -50,6 +50,7 @@ class Game {
         this.rainbowComboTimeout = null;
         
         // Replay logic is now in its own class
+        // Delay instantiation slightly to ensure imports are ready if needed, mostly fine though
         this.replay = new Replay(this, config);
         this.isRecordingStarted = false;
         

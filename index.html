@@ -8,7 +8,18 @@
     <script type="importmap">
     {
         "imports": {
-            "confetti": "https://esm.sh/canvas-confetti@1.9.2"
+            "confetti": "https://esm.sh/canvas-confetti@1.9.2",
+            "react": "https://esm.sh/react@18.3.1?dev",
+            "react-dom": "https://esm.sh/react-dom@18.3.1?dev",
+            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client?dev",
+            "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime?dev",
+            "react/jsx-dev-runtime": "https://esm.sh/react@18.3.1/jsx-dev-runtime?dev",
+            "remotion": "https://esm.sh/remotion@4.0.350?external=react,react-dom&dev",
+            "@remotion/player": "https://esm.sh/@remotion/player@4.0.350?external=react,react-dom&dev",
+            "@remotion/gif": "https://esm.sh/@remotion/gif@4.0.350?external=react,react-dom,remotion&dev",
+            "@remotion/transitions": "https://esm.sh/@remotion/transitions@4.0.350?external=react,react-dom,remotion&dev",
+            "@websim/remotion/player": "https://esm.websim.com/@websim/remotion/player",
+            "mediabunny": "https://esm.sh/mediabunny@1.19.1"
         }
     }
     </script>
@@ -42,15 +53,8 @@
         </div>
     </div>
     <div id="replay-modal" class="hidden">
-        <div id="replay-container">
-            <div id="replay-board"></div>
-            <div id="replay-controls">
-                <button id="play-pause-button">&#9658;</button> <!-- Play Icon -->
-            </div>
-            <div id="replay-footer">
-                <img id="qr-code" src="" alt="Scan for Game">
-            </div>
-            <button id="download-replay-button" class="icon-button" aria-label="Download Replay">⬇️</button>
+        <div id="replay-wrapper">
+            <div id="remotion-root"></div>
             <button id="close-replay-button" class="icon-button">&times;</button>
         </div>
     </div>
