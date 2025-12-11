@@ -36,12 +36,12 @@ const ReplayModalContent = () => {
       durationInFrames,
       fps: 30,
       compositionWidth: 540,
-      compositionHeight: 540,
+      compositionHeight: 960,
       controls: true,
       loop: true,
       autoPlay: true,
       inputProps: { recording: recordingData },
-      style: { width: "100%", maxWidth: "540px", aspectRatio: "1/1", boxShadow: "0 0 20px rgba(0,0,0,0.3)", borderRadius: "10px" }
+      style: { width: "100%", height: "100%", maxHeight: "80vh", aspectRatio: "9/16", boxShadow: "0 0 20px rgba(0,0,0,0.3)", borderRadius: "10px" }
     },
     void 0,
     false,

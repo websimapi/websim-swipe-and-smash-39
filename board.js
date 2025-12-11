@@ -384,9 +384,17 @@ export default class Board {
 
         this.onMatch(Array.from(candiesToRemove), true);
         
+        const ids = [];
         candiesToRemove.forEach(candy => {
             candy.classList.add('matched');
+            ids.push(parseInt(candy.dataset.id));
             this.grid[parseInt(candy.dataset.row)][parseInt(candy.dataset.col)] = null;
+        });
+
+        recorder.recordAction({
+            type: 'match_anim',
+            ids: ids,
+            duration: 300
         });
 
         await this.pausableTimeout(300);

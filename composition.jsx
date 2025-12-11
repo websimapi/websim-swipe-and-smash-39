@@ -124,8 +124,8 @@ const ReplayComposition = ({ recording }) => {
     }
     return { candies: Object.values(state), comboText: currentCombo };
   }, [recording, currentTime]);
-  return /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { backgroundColor: "#ffebf8", overflow: "hidden" }, children: [
-    /* @__PURE__ */ jsxDEV("div", { style: { position: "relative", width: 540, height: 540, border: "5px solid #e7a5d3", borderRadius: 10, background: "rgba(255,255,255,0.5)", boxSizing: "border-box" }, children: candies.map((c) => /* @__PURE__ */ jsxDEV(Candy, { ...c }, c.id, false, {
+  return /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { backgroundColor: "#ffebf8", overflow: "hidden", justifyContent: "center", alignItems: "center" }, children: [
+    /* @__PURE__ */ jsxDEV("div", { style: { position: "relative", width: 540, height: 540, border: "5px solid #e7a5d3", borderRadius: 10, background: "rgba(255,255,255,0.5)", boxSizing: "border-box", flexShrink: 0 }, children: candies.map((c) => /* @__PURE__ */ jsxDEV(Candy, { ...c }, c.id, false, {
       fileName: "<stdin>",
       lineNumber: 135,
       columnNumber: 32
@@ -168,7 +168,7 @@ const ReplayComposition = ({ recording }) => {
         }
       );
     }),
-    /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { justifyContent: "flex-end", alignItems: "flex-end", padding: 20, pointerEvents: "none" }, children: /* @__PURE__ */ jsxDEV(Img, { src: `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent("https://candysmash.on.websim.com")}`, style: { width: 100, height: 100, border: "2px solid white", borderRadius: 10, boxShadow: "0 4px 6px rgba(0,0,0,0.3)" } }, void 0, false, {
+    /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { justifyContent: "flex-end", alignItems: "flex-end", padding: 30, pointerEvents: "none" }, children: /* @__PURE__ */ jsxDEV(Img, { src: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent("https://candysmash.on.websim.com")}`, style: { width: 120, height: 120, border: "4px solid white", borderRadius: 15, boxShadow: "0 4px 10px rgba(0,0,0,0.3)" } }, void 0, false, {
       fileName: "<stdin>",
       lineNumber: 166,
       columnNumber: 14
