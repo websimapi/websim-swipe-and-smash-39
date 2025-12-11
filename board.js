@@ -3,7 +3,6 @@ import { playSound } from './audio.js';
 
 export default class Board {
     constructor(size, candyTypes, onMatch, getNewCandyType, getIsPaused = () => false) {
-        this.playSound = playSound;
         this.size = size;
         this.candyTypes = candyTypes;
         this.grid = [];
@@ -11,6 +10,7 @@ export default class Board {
         this.onMatch = onMatch;
         this.getNewCandyType = getNewCandyType;
         this.getIsPaused = getIsPaused;
+        this.nextCandyId = 1;
     }
 
     pausableTimeout(duration) {
@@ -51,42 +51,52 @@ export default class Board {
         this.boardElement.style.gridTemplateRows = `repeat(${this.size}, 1fr)`;
     }
 
-    createCandyElement() {
-        return document.createElement('div');
-    }
-
-    setCandyStyle(candy, property, value) {
-        candy.style[property] = value;
-    }
-
-    addCandyClass(candy, className) {
-        candy.classList.add(className);
-    }
-
     createCandy(row, col, type, isInitializing = false, isReplay = false) {
-        const candy = this.createCandyElement();
+        const candy = document.createElement('div');
         const candyType = type || this.getNewCandyType(isInitializing);
+        const id = this.nextCandyId++;
         
-        this.addCandyClass(candy, 'candy');
+        candy.classList.add('candy');
         if (isReplay) {
-            this.addCandyClass(candy, 'replay-candy');
+            candy.classList.add('replay-candy');
         }
         candy.dataset.row = row;
         candy.dataset.col = col;
         candy.dataset.type = candyType;
-        this.setCandyStyle(candy, 'backgroundImage', `url(${candyType})`);
+        candy.dataset.id = id;
+        candy.style.backgroundImage = `url(${candyType})`;
         
         const candySize = this.boardElement.clientWidth / this.size;
-        this.setCandyStyle(candy, 'width', `${candySize}px`);
-        this.setCandyStyle(candy, 'height', `${candySize}px`);
+        candy.style.width = `${candySize}px`;
+        candy.style.height = `${candySize}px`;
         
         if (isInitializing) {
-            this.setCandyStyle(candy, 'top', `${row * candySize}px`);
-            this.setCandyStyle(candy, 'left', `${col * candySize}px`);
+            candy.style.top = `${row * candySize}px`;
+            candy.style.left = `${col * candySize}px`;
+            if(!isReplay) {
+                recorder.recordAction({
+                    type: 'create',
+                    id: id,
+                    candyType: candyType,
+                    row: row,
+                    col: col,
+                    isInitializing: true
+                });
+            }
         } else {
             // Start above the board for drop-in animation
-            this.setCandyStyle(candy, 'top', `${-candySize}px`);
-            this.setCandyStyle(candy, 'left', `${col * candySize}px`);
+            candy.style.top = `${-candySize}px`;
+            candy.style.left = `${col * candySize}px`;
+            if(!isReplay) {
+                recorder.recordAction({
+                    type: 'create',
+                    id: id,
+                    candyType: candyType,
+                    row: row,
+                    col: col,
+                    isInitializing: false
+                });
+            }
         }
 
         this.boardElement.appendChild(candy);
@@ -111,12 +121,23 @@ export default class Board {
 
         // Animate swap
         const candySize = this.boardElement.clientWidth / this.size;
-        this.setCandyStyle(candy1, 'top', `${r2 * candySize}px`);
-        this.setCandyStyle(candy1, 'left', `${c2 * candySize}px`);
-        this.setCandyStyle(candy2, 'top', `${r1 * candySize}px`);
-        this.setCandyStyle(candy2, 'left', `${c1 * candySize}px`);
+        candy1.style.top = `${r2 * candySize}px`;
+        candy1.style.left = `${c2 * candySize}px`;
+        candy2.style.top = `${r1 * candySize}px`;
+        candy2.style.left = `${c1 * candySize}px`;
 
-        this.playSound('nice_swipe.mp3');
+        recorder.recordAction({
+            type: 'swap_anim',
+            id1: parseInt(candy1.dataset.id),
+            id2: parseInt(candy2.dataset.id),
+            c1_from: { r: r1, c: c1 },
+            c1_to: { r: r2, c: c2 },
+            c2_from: { r: r2, c: c2 },
+            c2_to: { r: r1, c: c1 },
+            duration: 300
+        });
+
+        playSound('nice_swipe.mp3');
         recorder.recordSound('nice_swipe.mp3');
         return this.pausableTimeout(300);
     }
@@ -170,9 +191,9 @@ export default class Board {
                 const isSwapped = (c) => swappedCandies.includes(c);
                 if (group.type === 'five' && group.candies.some(isSwapped)) {
                     powerup = { type: 'rainbow' };
-                } else if ((group.type === 'L' || group.type === 'T') && group.candies.some(isSwapped)) {
+                } else if (group.type === 'L' || group.type === 'T') {
                      powerup = { type: 'bomb' };
-                } else if (group.type === 'four' && group.candies.some(isSwapped)) {
+                } else if (group.type === 'four') {
                      powerup = group.candies[1].dataset.row === group.candies[0].dataset.row ? { type: 'row' } : { type: 'col' };
                 }
             }
@@ -196,10 +217,10 @@ export default class Board {
             if (candyToUpgrade && allCandiesToClear.has(candyToUpgrade)) {
                 allCandiesToClear.delete(candyToUpgrade);
                 candyToUpgrade.dataset.powerup = p.type;
-                this.addCandyClass(candyToUpgrade, `powerup-${p.type}`);
+                candyToUpgrade.classList.add(`powerup-${p.type}`);
                  if (p.type === 'rainbow') {
                     candyToUpgrade.dataset.type = 'candy_chocolate.png';
-                    this.setCandyStyle(candyToUpgrade, 'backgroundImage', `url(candy_chocolate.png)`);
+                    candyToUpgrade.style.backgroundImage = `url(candy_chocolate.png)`;
                 }
             }
         });
@@ -229,15 +250,25 @@ export default class Board {
         if (allCandiesToClear.size > 0) {
             this.onMatch(Array.from(allCandiesToClear), swappedCandies !== null);
             
+            const ids = [];
             allCandiesToClear.forEach(candy => {
-                this.addCandyClass(candy, 'matched');
+                candy.classList.add('matched');
+                ids.push(parseInt(candy.dataset.id));
                 this.grid[parseInt(candy.dataset.row)][parseInt(candy.dataset.col)] = null;
+            });
+            recorder.recordAction({
+                type: 'match_anim',
+                ids: ids,
+                duration: 300
             });
         }
         
         await this.pausableTimeout(300);
         
-        allCandiesToClear.forEach(candy => candy.remove());
+        allCandiesToClear.forEach(candy => {
+             recorder.recordAction({ type: 'remove', id: parseInt(candy.dataset.id) });
+             candy.remove();
+        });
         
         await this.dropCandies();
         await this.fillBoard();
@@ -309,18 +340,28 @@ export default class Board {
         // This is a smash, not a player-made match, so isPlayerMove is false.
         this.onMatch(candiesToSmash, false);
         
+        const smashIds = [];
         candiesToSmash.forEach(candy => {
-            this.addCandyClass(candy, 'matched');
+            candy.classList.add('matched');
+            smashIds.push(parseInt(candy.dataset.id));
             const r = parseInt(candy.dataset.row);
             const c = parseInt(candy.dataset.col);
             if (this.grid[r] && this.grid[r][c] === candy) {
                  this.grid[r][c] = null;
             }
         });
+        recorder.recordAction({
+             type: 'match_anim', 
+             ids: smashIds,
+             duration: 300
+        });
 
         await this.pausableTimeout(300);
         
-        candiesToSmash.forEach(candy => candy.remove());
+        candiesToSmash.forEach(candy => {
+            recorder.recordAction({ type: 'remove', id: parseInt(candy.dataset.id) });
+            candy.remove();
+        });
         
         await this.dropCandies();
         await this.fillBoard();
@@ -344,7 +385,7 @@ export default class Board {
         this.onMatch(Array.from(candiesToRemove), true);
         
         candiesToRemove.forEach(candy => {
-            this.addCandyClass(candy, 'matched');
+            candy.classList.add('matched');
             this.grid[parseInt(candy.dataset.row)][parseInt(candy.dataset.col)] = null;
         });
 
@@ -370,7 +411,14 @@ export default class Board {
                         this.grid[emptyRow][c].dataset.row = emptyRow;
                         
                         const candySize = this.boardElement.clientWidth / this.size;
-                        this.setCandyStyle(this.grid[emptyRow][c], 'top', `${emptyRow * candySize}px`);
+                        this.grid[emptyRow][c].style.top = `${emptyRow * candySize}px`;
+
+                        recorder.recordAction({
+                            type: 'fall_anim',
+                            id: parseInt(this.grid[emptyRow][c].dataset.id),
+                            toRow: emptyRow,
+                            duration: 300
+                        });
                     }
                     emptyRow--;
                 }
@@ -387,14 +435,10 @@ export default class Board {
                     const candy = this.createCandy(r, c, undefined, false, isReplay);
                     this.grid[r][c] = candy;
                     // Animate the drop
-                    if (this.isSimulation) {
-                         this.setCandyStyle(candy, 'top', `${r * candySize}px`);
-                    } else {
-                        await new Promise(resolve => requestAnimationFrame(() => {
-                            this.setCandyStyle(candy, 'top', `${r * candySize}px`);
-                            resolve();
-                        }));
-                    }
+                    await new Promise(resolve => requestAnimationFrame(() => {
+                        candy.style.top = `${r * candySize}px`;
+                        resolve();
+                    }));
                 }
             }
         }

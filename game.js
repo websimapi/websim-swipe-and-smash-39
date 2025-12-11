@@ -1,6 +1,5 @@
 import Board from './board.js';
 import InputHandler from './input.js';
-import Replay from './replay.js';
 import { playSound, pauseBackgroundMusic, resumeBackgroundMusic, stopBackgroundMusic, playBackgroundMusic } from './audio.js';
 import * as recorder from './recorder.js';
 import confetti from 'confetti';
@@ -49,9 +48,6 @@ class Game {
         this.isRainbowMode = false;
         this.rainbowComboTimeout = null;
         
-        // Replay logic is now in its own class
-        // Delay instantiation slightly to ensure imports are ready if needed, mostly fine though
-        this.replay = new Replay(this, config);
         this.isRecordingStarted = false;
         
         this.inputHandler = new InputHandler(this.board.boardElement, this.onSwap.bind(this), this.onSmash.bind(this));
@@ -111,6 +107,37 @@ class Game {
 
     setupUI() {
         document.getElementById('start-button').addEventListener('click', () => this.startGame());
+        document.getElementById('clip-button').addEventListener('click', () => this.showReplay());
+        document.getElementById('close-replay-button').addEventListener('click', () => this.hideReplay());
+    }
+
+    showReplay() {
+        this.pauseTimer();
+        this.pauseMainBGM();
+        if (this.isRecordingStarted) {
+            recorder.pauseRecording();
+        }
+        
+        const modal = document.getElementById('replay-modal');
+        modal.classList.remove('hidden');
+        
+        // Dispatch event for React to pick up
+        window.dispatchEvent(new CustomEvent('showReplay', { 
+            detail: recorder.getRecording() 
+        }));
+    }
+
+    hideReplay() {
+        const modal = document.getElementById('replay-modal');
+        modal.classList.add('hidden');
+        
+        window.dispatchEvent(new CustomEvent('hideReplay'));
+
+        if (this.isRecordingStarted) {
+            recorder.resumeRecording();
+        }
+        this.resumeMainBGM();
+        this.resumeTimer();
     }
 
     startTimer() {

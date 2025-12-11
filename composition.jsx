@@ -1,1 +1,188 @@
-{"content":"import React, { useMemo } from 'react';\nimport { AbsoluteFill, useCurrentFrame, useVideoConfig, Audio, staticFile, Sequence, Img } from 'remotion';\n\nconst Candy = ({ state, type }) => {\n    if (state.removed) return null;\n    \n    // Parse px values to numbers for potential interpolation if we wanted smooth movement\n    // But since we have many small updates from the simulation, direct mapping is fine.\n    \n    return (\n        <div style={{\n            position: 'absolute',\n            top: state.top,\n            left: state.left,\n            width: state.width,\n            height: state.height,\n            backgroundImage: `url(${state.backgroundImage})`, // Use backgroundImage from state which includes url()\n            backgroundSize: '80%',\n            backgroundRepeat: 'no-repeat',\n            backgroundPosition: 'center',\n            transition: 'top 0.3s ease, left 0.3s ease', // Add CSS transition for smoothness between keyframes\n            transform: state.classes.includes('matched') ? 'scale(0)' : 'scale(1)',\n            opacity: state.classes.includes('matched') ? 0 : 1,\n            filter: state.classes.includes('selected') ? 'drop-shadow(0 0 5px yellow)' : 'none',\n        }}>\n            {state.classes.includes('powerup-bomb') && (\n                <div style={{\n                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',\n                    fontSize: '1.5em', opacity: 0.7, textShadow: '0 0 3px white'\n                }}>💥</div>\n            )}\n             {state.classes.includes('powerup-row') && (\n                <div style={{\n                    position: 'absolute', top: '50%', left: '10%', right: '10%', height: '10%',\n                    backgroundColor: 'rgba(255, 255, 255, 0.7)', borderRadius: '5px', transform: 'translateY(-50%)',\n                    boxShadow: '0 0 4px white'\n                }}/>\n            )}\n             {state.classes.includes('powerup-col') && (\n                <div style={{\n                    position: 'absolute', left: '50%', top: '10%', bottom: '10%', width: '10%',\n                    backgroundColor: 'rgba(255, 255, 255, 0.7)', borderRadius: '5px', transform: 'translateX(-50%)',\n                    boxShadow: '0 0 4px white'\n                }}/>\n            )}\n        </div>\n    );\n};\n\nexport const GameComposition = ({ events, sounds, duration }) => {\n    const frame = useCurrentFrame();\n    const { fps } = useVideoConfig();\n    const currentTime = (frame / fps) * 1000;\n\n    // Compute state at current frame\n    const gameState = useMemo(() => {\n        const candies = {}; // id -> state\n        let combo = 0;\n        let isRainbow = false;\n\n        for (const event of events) {\n            if (event.time > currentTime) break;\n            \n            if (event.id === 'global') {\n                if (event.type === 'combo') combo = event.data.count;\n                if (event.type === 'rainbowStart') isRainbow = true;\n                if (event.type === 'rainbowEnd') isRainbow = false;\n                continue;\n            }\n\n            if (!candies[event.id]) {\n                candies[event.id] = { \n                    classes: [],\n                    removed: false,\n                    top: '0px', left: '0px', width: '0px', height: '0px', backgroundImage: ''\n                };\n            }\n            \n            const c = candies[event.id];\n            if (event.type === 'init') {\n                c.backgroundImage = `url(${event.data.type})`;\n                c.top = event.data.top;\n                c.left = event.data.left;\n                c.width = event.data.width;\n                c.height = event.data.height;\n            } else if (event.type === 'style') {\n                if (event.data.prop === 'backgroundImage') {\n                    // Fix: board.js sends url(...) string, or just filename? \n                    // Board code: this.setCandyStyle(candy, 'backgroundImage', `url(${candyType})`);\n                    // So it sends 'url(file.png)'\n                    c.backgroundImage = event.data.value;\n                } else {\n                    c[event.data.prop] = event.data.value;\n                }\n            } else if (event.type === 'classAdd') {\n                c.classes.push(event.data.className);\n            } else if (event.type === 'remove') {\n                c.removed = true;\n            }\n        }\n        return { candies, combo, isRainbow };\n    }, [events, currentTime]);\n\n    return (\n        <AbsoluteFill style={{ backgroundColor: '#ffebf8', fontFamily: 'Comic Sans MS, sans-serif' }}>\n            {/* Background Music */}\n            <Audio src={staticFile('Jelly Cascade - Mash for the Candy Crown - Sonauto.ogg')} volume={0.3} />\n\n            {/* SFX */}\n            {sounds.map((sound, i) => {\n                 const startFrame = (sound.timestamp / 1000) * fps;\n                 return (\n                     <Sequence key={i} from={Math.round(startFrame)}>\n                        <Audio src={staticFile(sound.name)} />\n                     </Sequence>\n                 );\n            })}\n\n            <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center' }}>\n                <div style={{\n                    width: '900px',\n                    height: '900px',\n                    border: '10px solid #e7a5d3',\n                    backgroundColor: 'rgba(255, 255, 255, 0.5)',\n                    position: 'relative',\n                    borderRadius: '20px',\n                    overflow: 'hidden',\n                    filter: gameState.isRainbow ? 'hue-rotate(' + ((frame % 180) * 2) + 'deg)' : 'none'\n                }}>\n                    {Object.entries(gameState.candies).map(([id, state]) => (\n                        <Candy key={id} state={state} type={state.type} />\n                    ))}\n                </div>\n\n                {/* Combo Indicator */}\n                {gameState.combo >= 2 && (\n                    <div style={{\n                        position: 'absolute',\n                        top: gameState.isRainbow ? '50px' : '50%',\n                        left: gameState.isRainbow ? '50px' : '50%',\n                        transform: gameState.isRainbow ? 'scale(1)' : 'translate(-50%, -50%) scale(1.5)',\n                        color: 'white',\n                        fontSize: gameState.isRainbow ? '4em' : '8em',\n                        fontWeight: 'bold',\n                        textShadow: '5px 5px 0 #d63384, -2px -2px 0 #d63384',\n                        zIndex: 100,\n                        transition: 'all 0.2s ease'\n                    }}>\n                        Combo x{gameState.combo}\n                    </div>\n                )}\n            </AbsoluteFill>\n            \n            {/* QR Code Overlay */}\n            <AbsoluteFill>\n                <div style={{\n                    position: 'absolute',\n                    bottom: '40px',\n                    right: '40px',\n                    width: '150px',\n                    height: '150px',\n                    backgroundColor: 'white',\n                    padding: '10px',\n                    borderRadius: '15px',\n                    boxShadow: '0 4px 10px rgba(0,0,0,0.3)',\n                    display: 'flex',\n                    flexDirection: 'column',\n                    alignItems: 'center',\n                    justifyContent: 'center'\n                }}>\n                     <Img \n                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('https://candysmash.on.websim.com')}`}\n                        style={{ width: '100%', height: '100%' }}\n                    />\n                </div>\n            </AbsoluteFill>\n        </AbsoluteFill>\n    );\n};\n\n                <div style={{\n                    width: '900px',\n                    height: '900px',\n\n"}
+import { jsxDEV } from "react/jsx-dev-runtime";
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig, Audio, staticFile, interpolate, Img } from "remotion";
+const BOARD_SIZE = 10;
+const CANDY_SIZE = 540 / BOARD_SIZE;
+const Candy = ({ type, x, y, scale = 1, opacity = 1 }) => {
+  return /* @__PURE__ */ jsxDEV(
+    "div",
+    {
+      style: {
+        position: "absolute",
+        left: x,
+        top: y,
+        width: CANDY_SIZE,
+        height: CANDY_SIZE,
+        backgroundImage: `url(${type})`,
+        backgroundSize: "80%",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center",
+        transform: `scale(${scale})`,
+        opacity
+      }
+    },
+    void 0,
+    false,
+    {
+      fileName: "<stdin>",
+      lineNumber: 9,
+      columnNumber: 5
+    }
+  );
+};
+const ReplayComposition = ({ recording }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const currentTime = frame / fps * 1e3;
+  const { candies, comboText } = useMemo(() => {
+    const state = {};
+    let currentCombo = null;
+    for (const action of recording.actions) {
+      if (action.type === "comboUpdate") {
+        if (currentTime >= action.timestamp && currentTime < action.timestamp + 1500) {
+          if (action.count >= 2) {
+            currentCombo = `Combo x${action.count}`;
+          }
+        }
+      }
+      if (action.type === "create") {
+        if (action.timestamp <= currentTime) {
+          state[action.id] = {
+            id: action.id,
+            type: action.candyType,
+            r: action.row,
+            c: action.col,
+            x: action.col * CANDY_SIZE,
+            y: action.row * CANDY_SIZE,
+            scale: 1,
+            opacity: 1
+          };
+          const age = currentTime - action.timestamp;
+          if (age < 300 && !action.isInitializing) {
+            state[action.id].y = action.row * CANDY_SIZE - CANDY_SIZE + age / 300 * CANDY_SIZE;
+          }
+        }
+      } else if (action.type === "remove") {
+        if (action.timestamp <= currentTime) {
+          delete state[action.id];
+        }
+      } else if (action.type === "match_anim") {
+        const age = currentTime - action.timestamp;
+        if (age >= 0 && age < action.duration) {
+          const progress = age / action.duration;
+          action.ids.forEach((id) => {
+            if (state[id]) {
+              state[id].scale = 1 - progress;
+              state[id].opacity = 1 - progress;
+            }
+          });
+        }
+      } else if (action.type === "swap_anim") {
+        const age = currentTime - action.timestamp;
+        const c1 = state[action.id1];
+        const c2 = state[action.id2];
+        if (age >= action.duration) {
+          if (c1) {
+            c1.r = action.c1_to.r;
+            c1.c = action.c1_to.c;
+            c1.x = c1.c * CANDY_SIZE;
+            c1.y = c1.r * CANDY_SIZE;
+          }
+          if (c2) {
+            c2.r = action.c2_to.r;
+            c2.c = action.c2_to.c;
+            c2.x = c2.c * CANDY_SIZE;
+            c2.y = c2.r * CANDY_SIZE;
+          }
+        } else if (age >= 0) {
+          const p = age / action.duration;
+          if (c1) {
+            c1.x = action.c1_from.c * CANDY_SIZE * (1 - p) + action.c1_to.c * CANDY_SIZE * p;
+            c1.y = action.c1_from.r * CANDY_SIZE * (1 - p) + action.c1_to.r * CANDY_SIZE * p;
+          }
+          if (c2) {
+            c2.x = action.c2_from.c * CANDY_SIZE * (1 - p) + action.c2_to.c * CANDY_SIZE * p;
+            c2.y = action.c2_from.r * CANDY_SIZE * (1 - p) + action.c2_to.r * CANDY_SIZE * p;
+          }
+        }
+      } else if (action.type === "fall_anim") {
+        const age = currentTime - action.timestamp;
+        const c = state[action.id];
+        if (c) {
+          if (age >= action.duration) {
+            c.r = action.toRow;
+            c.y = action.toRow * CANDY_SIZE;
+          } else if (age >= 0) {
+            const startY = c.y;
+            const fromY = c.r * CANDY_SIZE;
+            const toY = action.toRow * CANDY_SIZE;
+            const p = age / action.duration;
+            c.y = fromY + (toY - fromY) * p;
+          }
+        }
+      }
+    }
+    return { candies: Object.values(state), comboText: currentCombo };
+  }, [recording, currentTime]);
+  return /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { backgroundColor: "#ffebf8", overflow: "hidden" }, children: [
+    /* @__PURE__ */ jsxDEV("div", { style: { position: "relative", width: 540, height: 540, border: "5px solid #e7a5d3", borderRadius: 10, background: "rgba(255,255,255,0.5)", boxSizing: "border-box" }, children: candies.map((c) => /* @__PURE__ */ jsxDEV(Candy, { ...c }, c.id, false, {
+      fileName: "<stdin>",
+      lineNumber: 135,
+      columnNumber: 32
+    })) }, void 0, false, {
+      fileName: "<stdin>",
+      lineNumber: 134,
+      columnNumber: 11
+    }),
+    comboText && /* @__PURE__ */ jsxDEV("div", { style: {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      fontSize: "4em",
+      fontWeight: "bold",
+      color: "white",
+      textShadow: "3px 3px 0 #d63384, -1px -1px 0 #d63384",
+      fontFamily: "Comic Sans MS, sans-serif",
+      zIndex: 10
+    }, children: comboText }, void 0, false, {
+      fileName: "<stdin>",
+      lineNumber: 139,
+      columnNumber: 14
+    }),
+    recording.actions.filter((a) => a.type === "sound").map((a, i) => {
+      const startFrame = a.timestamp / 1e3 * fps;
+      return /* @__PURE__ */ jsxDEV(
+        Audio,
+        {
+          src: staticFile(a.name),
+          startFrom: startFrame,
+          volume: 0.5
+        },
+        i,
+        false,
+        {
+          fileName: "<stdin>",
+          lineNumber: 155,
+          columnNumber: 19
+        }
+      );
+    }),
+    /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { justifyContent: "flex-end", alignItems: "flex-end", padding: 20, pointerEvents: "none" }, children: /* @__PURE__ */ jsxDEV(Img, { src: `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent("https://candysmash.on.websim.com")}`, style: { width: 100, height: 100, border: "2px solid white", borderRadius: 10, boxShadow: "0 4px 6px rgba(0,0,0,0.3)" } }, void 0, false, {
+      fileName: "<stdin>",
+      lineNumber: 166,
+      columnNumber: 14
+    }) }, void 0, false, {
+      fileName: "<stdin>",
+      lineNumber: 165,
+      columnNumber: 12
+    })
+  ] }, void 0, true, {
+    fileName: "<stdin>",
+    lineNumber: 133,
+    columnNumber: 7
+  });
+};
+export {
+  ReplayComposition
+};
