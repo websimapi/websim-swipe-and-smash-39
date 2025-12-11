@@ -3,7 +3,7 @@ import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig, Audio, staticFile, interpolate, Img } from "remotion";
 const BOARD_SIZE = 10;
 const CANDY_SIZE = 540 / BOARD_SIZE;
-const Candy = ({ type, x, y, scale = 1, opacity = 1 }) => {
+const Candy = ({ type, x, y, scale = 1, opacity = 1, powerup = null }) => {
   return /* @__PURE__ */ jsxDEV(
     "div",
     {
@@ -13,16 +13,61 @@ const Candy = ({ type, x, y, scale = 1, opacity = 1 }) => {
         top: y,
         width: CANDY_SIZE,
         height: CANDY_SIZE,
-        backgroundImage: `url(${type})`,
+        backgroundImage: `url(${staticFile(type)})`,
         backgroundSize: "80%",
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center",
         transform: `scale(${scale})`,
-        opacity
-      }
+        opacity,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        filter: powerup === "rainbow" ? "drop-shadow(0 0 3px red)" : "none"
+      },
+      children: [
+        powerup === "bomb" && /* @__PURE__ */ jsxDEV("div", { style: {
+          fontSize: "1.5em",
+          opacity: 0.7,
+          textShadow: "0 0 3px white"
+        }, children: "\u{1F4A5}" }, void 0, false, {
+          fileName: "<stdin>",
+          lineNumber: 29,
+          columnNumber: 13
+        }),
+        powerup === "row" && /* @__PURE__ */ jsxDEV("div", { style: {
+          position: "absolute",
+          top: "50%",
+          left: "10%",
+          right: "10%",
+          height: "10%",
+          backgroundColor: "rgba(255, 255, 255, 0.7)",
+          borderRadius: "5px",
+          transform: "translateY(-50%)",
+          boxShadow: "0 0 4px white"
+        } }, void 0, false, {
+          fileName: "<stdin>",
+          lineNumber: 36,
+          columnNumber: 13
+        }),
+        powerup === "col" && /* @__PURE__ */ jsxDEV("div", { style: {
+          position: "absolute",
+          left: "50%",
+          top: "10%",
+          bottom: "10%",
+          width: "10%",
+          backgroundColor: "rgba(255, 255, 255, 0.7)",
+          borderRadius: "5px",
+          transform: "translateX(-50%)",
+          boxShadow: "0 0 4px white"
+        } }, void 0, false, {
+          fileName: "<stdin>",
+          lineNumber: 49,
+          columnNumber: 13
+        })
+      ]
     },
     void 0,
-    false,
+    true,
     {
       fileName: "<stdin>",
       lineNumber: 9,
@@ -50,6 +95,16 @@ const ReplayComposition = ({ recording }) => {
           }
         }
       }
+      if (action.type === "powerup_upgrade") {
+        if (action.timestamp <= currentTime) {
+          if (state[action.id]) {
+            state[action.id].powerup = action.powerup;
+            if (action.powerup === "rainbow") {
+              state[action.id].type = "candy_chocolate.png";
+            }
+          }
+        }
+      }
       if (action.type === "create") {
         if (action.timestamp <= currentTime) {
           state[action.id] = {
@@ -60,7 +115,8 @@ const ReplayComposition = ({ recording }) => {
             x: action.col * CANDY_SIZE,
             y: action.row * CANDY_SIZE,
             scale: 1,
-            opacity: 1
+            opacity: 1,
+            powerup: null
           };
           const age = currentTime - action.timestamp;
           if (age < 300 && !action.isInitializing) {
@@ -132,11 +188,11 @@ const ReplayComposition = ({ recording }) => {
   return /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { backgroundColor: "#ffebf8", overflow: "hidden", justifyContent: "center", alignItems: "center" }, children: [
     /* @__PURE__ */ jsxDEV("div", { style: { position: "relative", width: 540, height: 540, border: "5px solid #e7a5d3", borderRadius: 10, background: "rgba(255,255,255,0.5)", boxSizing: "border-box", flexShrink: 0 }, children: candies.map((c) => /* @__PURE__ */ jsxDEV(Candy, { ...c }, c.id, false, {
       fileName: "<stdin>",
-      lineNumber: 141,
+      lineNumber: 190,
       columnNumber: 32
     })) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 140,
+      lineNumber: 189,
       columnNumber: 11
     }),
     comboText && /* @__PURE__ */ jsxDEV("div", { style: {
@@ -152,7 +208,7 @@ const ReplayComposition = ({ recording }) => {
       zIndex: 10
     }, children: comboText }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 145,
+      lineNumber: 194,
       columnNumber: 14
     }),
     recording.actions.filter((a) => a.type === "sound").map((a, i) => {
@@ -168,23 +224,23 @@ const ReplayComposition = ({ recording }) => {
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 164,
+          lineNumber: 213,
           columnNumber: 19
         }
       );
     }),
     /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { justifyContent: "flex-end", alignItems: "flex-end", padding: 30, pointerEvents: "none" }, children: /* @__PURE__ */ jsxDEV(Img, { src: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent("https://candysmash.on.websim.com")}`, style: { width: 120, height: 120, border: "4px solid white", borderRadius: 15, boxShadow: "0 4px 10px rgba(0,0,0,0.3)" } }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 175,
+      lineNumber: 224,
       columnNumber: 14
     }) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 174,
+      lineNumber: 223,
       columnNumber: 12
     })
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 139,
+    lineNumber: 188,
     columnNumber: 7
   });
 };

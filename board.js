@@ -222,6 +222,12 @@ export default class Board {
                     candyToUpgrade.dataset.type = 'candy_chocolate.png';
                     candyToUpgrade.style.backgroundImage = `url(candy_chocolate.png)`;
                 }
+
+                recorder.recordAction({
+                    type: 'powerup_upgrade',
+                    id: parseInt(candyToUpgrade.dataset.id),
+                    powerup: p.type
+                });
             }
         });
 
