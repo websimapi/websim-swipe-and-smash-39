@@ -40,6 +40,7 @@ const ReplayModalContent = () => {
       controls: true,
       loop: true,
       autoPlay: true,
+      numberOfSharedAudioTags: 50,
       inputProps: { recording: recordingData },
       style: { width: "100%", height: "100%", maxHeight: "80vh", aspectRatio: "9/16", boxShadow: "0 0 20px rgba(0,0,0,0.3)", borderRadius: "10px" }
     },
@@ -61,7 +62,7 @@ if (rootElement) {
   const root = createRoot(rootElement);
   root.render(/* @__PURE__ */ jsxDEV(ReplayModalContent, {}, void 0, false, {
     fileName: "<stdin>",
-    lineNumber: 57,
+    lineNumber: 58,
     columnNumber: 17
   }));
 }

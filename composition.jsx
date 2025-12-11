@@ -34,10 +34,15 @@ const ReplayComposition = ({ recording }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const currentTime = frame / fps * 1e3;
-  const { candies, comboText } = useMemo(() => {
+  const { candies, comboText, isRainbow } = useMemo(() => {
     const state = {};
     let currentCombo = null;
+    let isRainbow2 = false;
     for (const action of recording.actions) {
+      if (action.timestamp <= currentTime) {
+        if (action.type === "startRainbow") isRainbow2 = true;
+        if (action.type === "endRainbow") isRainbow2 = false;
+      }
       if (action.type === "comboUpdate") {
         if (currentTime >= action.timestamp && currentTime < action.timestamp + 1500) {
           if (action.count >= 2) {
@@ -122,24 +127,24 @@ const ReplayComposition = ({ recording }) => {
         }
       }
     }
-    return { candies: Object.values(state), comboText: currentCombo };
+    return { candies: Object.values(state), comboText: currentCombo, isRainbow: isRainbow2 };
   }, [recording, currentTime]);
   return /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { backgroundColor: "#ffebf8", overflow: "hidden", justifyContent: "center", alignItems: "center" }, children: [
     /* @__PURE__ */ jsxDEV("div", { style: { position: "relative", width: 540, height: 540, border: "5px solid #e7a5d3", borderRadius: 10, background: "rgba(255,255,255,0.5)", boxSizing: "border-box", flexShrink: 0 }, children: candies.map((c) => /* @__PURE__ */ jsxDEV(Candy, { ...c }, c.id, false, {
       fileName: "<stdin>",
-      lineNumber: 135,
+      lineNumber: 141,
       columnNumber: 32
     })) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 134,
+      lineNumber: 140,
       columnNumber: 11
     }),
     comboText && /* @__PURE__ */ jsxDEV("div", { style: {
       position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      fontSize: "4em",
+      top: isRainbow ? "10px" : "50%",
+      left: isRainbow ? "10px" : "50%",
+      transform: isRainbow ? "none" : "translate(-50%, -50%)",
+      fontSize: isRainbow ? "2em" : "4em",
       fontWeight: "bold",
       color: "white",
       textShadow: "3px 3px 0 #d63384, -1px -1px 0 #d63384",
@@ -147,7 +152,7 @@ const ReplayComposition = ({ recording }) => {
       zIndex: 10
     }, children: comboText }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 139,
+      lineNumber: 145,
       columnNumber: 14
     }),
     recording.actions.filter((a) => a.type === "sound").map((a, i) => {
@@ -163,23 +168,23 @@ const ReplayComposition = ({ recording }) => {
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 155,
+          lineNumber: 164,
           columnNumber: 19
         }
       );
     }),
     /* @__PURE__ */ jsxDEV(AbsoluteFill, { style: { justifyContent: "flex-end", alignItems: "flex-end", padding: 30, pointerEvents: "none" }, children: /* @__PURE__ */ jsxDEV(Img, { src: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent("https://candysmash.on.websim.com")}`, style: { width: 120, height: 120, border: "4px solid white", borderRadius: 15, boxShadow: "0 4px 10px rgba(0,0,0,0.3)" } }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 166,
+      lineNumber: 175,
       columnNumber: 14
     }) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 165,
+      lineNumber: 174,
       columnNumber: 12
     })
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 133,
+    lineNumber: 139,
     columnNumber: 7
   });
 };
